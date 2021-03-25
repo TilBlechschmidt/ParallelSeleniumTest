@@ -49,6 +49,17 @@ async fn run_test(endpoint: &str) -> Result<()> {
     let mut driver = WebDriver::new(endpoint, &caps).await?;
     let session_id = driver.session_id().to_string();
 
+    if let Err(e) = run_test_content(&mut driver).await {
+        driver.quit().await.ok();
+        bail!("{} failed due to {}", session_id, e);
+    } else {
+        driver.quit().await.ok();
+    }
+
+    Ok(())
+}
+
+async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
     driver.get("https://duckduckgo.com").await?;
     send_message(&driver, "Visiting DuckDuckGo").await?;
 
@@ -81,11 +92,9 @@ async fn run_test(endpoint: &str) -> Result<()> {
 
     if !found {
         send_message(&driver, "No result.").await?;
-        driver.quit().await?;
-        bail!("Element not found on session {} :(", session_id);
+        bail!("Element not found :(");
     } else {
         send_message(&driver, "Found result!").await?;
-        driver.quit().await?;
     }
 
     Ok(())
