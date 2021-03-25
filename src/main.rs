@@ -46,7 +46,9 @@ async fn main() -> Result<()> {
 
 async fn run_test(endpoint: &str) -> Result<()> {
     let caps = DesiredCapabilities::firefox();
-    let mut driver = WebDriver::new(endpoint, &caps).await?;
+    let mut driver =
+        WebDriver::new_with_initial_timeout(endpoint, &caps, Some(Duration::from_secs(600)))
+            .await?;
     let session_id = driver.session_id().to_string();
 
     if let Err(e) = run_test_content(&mut driver).await {
