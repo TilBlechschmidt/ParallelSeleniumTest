@@ -37,6 +37,10 @@ async fn main() -> Result<()> {
         count
     );
 
+    if failed > 0 {
+        std::process::exit(1);
+    }
+
     Ok(())
 }
 
