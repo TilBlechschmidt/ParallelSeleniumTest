@@ -967,8 +967,9 @@ dependencies = [
 
 [[package]]
 name = "thirtyfour"
-version = "0.22.3"
-source = "git+https://github.com/TilBlechschmidt/thirtyfour?branch=feature/initial-timeout#22179560b84a3bd275f71e165c63f7352ad5a509"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31cf557985ca13767a17c7916cf6093fe0520b75be3e3003e9adda6c1322c2e8"
 dependencies = [
  "async-trait",
  "base64",
@@ -987,8 +988,9 @@ dependencies = [
 
 [[package]]
 name = "thirtyfour_query"
-version = "0.6.0"
-source = "git+https://github.com/TilBlechschmidt/thirtyfour_query?branch=main#a29ee07221cc188ae4e4ede546bf23281d63fd65"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c6cb44776b2c24f7d1f832c8bca22d1ccab0e6c2c11b18d97a408096beb69b6"
 dependencies = [
  "async-trait",
  "futures",

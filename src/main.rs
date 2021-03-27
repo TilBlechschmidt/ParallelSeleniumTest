@@ -52,8 +52,7 @@ async fn run_test(endpoint: &str) -> Result<()> {
     caps.add_subkey("webgrid:options", "metadata", metadata)?;
 
     let mut driver =
-        WebDriver::new_with_initial_timeout(endpoint, &caps, Some(Duration::from_secs(600)))
-            .await?;
+        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?;
     let session_id = driver.session_id().to_string();
 
     if let Err(e) = run_test_content(&mut driver).await {

@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 tokio = { version = "1", features = ["full", "rt-multi-thread"] }
-thirtyfour = { git = "https://github.com/TilBlechschmidt/thirtyfour", branch = "feature/initial-timeout" }
+thirtyfour = "0.23"
 anyhow = "1"
 serde_json = "1"
-thirtyfour_query = { git = "https://github.com/TilBlechschmidt/thirtyfour_query", branch = "main" }
+thirtyfour_query = "0.6"
