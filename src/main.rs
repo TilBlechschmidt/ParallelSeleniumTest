@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
-use std::time::Duration;
-use thirtyfour::prelude::*;
+use std::{collections::HashMap, time::Duration};
+use thirtyfour::{prelude::*, Capabilities};
 use thirtyfour_query::{ElementPoller, ElementQueryable};
 use tokio::spawn;
 
@@ -45,7 +45,12 @@ async fn main() -> Result<()> {
 }
 
 async fn run_test(endpoint: &str) -> Result<()> {
-    let caps = DesiredCapabilities::firefox();
+    let mut caps = DesiredCapabilities::firefox();
+    let mut metadata = HashMap::new();
+    metadata.insert("name", "test-name");
+    metadata.insert("build", "test-build");
+    caps.add_subkey("webgrid:options", "metadata", metadata)?;
+
     let mut driver =
         WebDriver::new_with_initial_timeout(endpoint, &caps, Some(Duration::from_secs(600)))
             .await?;
@@ -94,9 +99,11 @@ async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
 
     if !found {
         send_message(&driver, "No result.").await?;
+        set_status(&driver, "failure").await?;
         bail!("Element not found :(");
     } else {
         send_message(&driver, "Found result!").await?;
+        set_status(&driver, "success").await?;
     }
 
     Ok(())
@@ -106,5 +113,12 @@ async fn send_message(driver: &WebDriver, message: &str) -> Result<()> {
     let cookie = Cookie::new("webgrid:message", serde_json::json!(message));
     driver.add_cookie(cookie).await?;
     // println!("{} ({})", message, driver.session_id());
+    Ok(())
+}
+
+async fn set_status(driver: &WebDriver, status: &str) -> Result<()> {
+    let cookie = Cookie::new("webgrid:metadata.session:status", serde_json::json!(status));
+    driver.add_cookie(cookie).await?;
+
     Ok(())
 }
