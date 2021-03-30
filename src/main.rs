@@ -10,6 +10,11 @@ async fn main() -> Result<()> {
 
     let endpoint = &args[1];
     let count: i32 = args[2].parse::<i32>().unwrap();
+    let browser = if args.len() > 3 {
+        args[3].to_ascii_lowercase()
+    } else {
+        "firefox".to_owned()
+    };
 
     println!("Running {} tests against '{}'", count, endpoint);
 
@@ -18,7 +23,8 @@ async fn main() -> Result<()> {
 
     for _ in 0..count {
         let endpoint = endpoint.clone();
-        let handle = spawn(async move { run_test(&endpoint.clone()).await });
+        let browser = browser.clone();
+        let handle = spawn(async move { run_test(&endpoint.clone(), &browser.clone()).await });
         handles.push(handle);
     }
 
@@ -44,15 +50,23 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_test(endpoint: &str) -> Result<()> {
-    let mut caps = DesiredCapabilities::firefox();
+async fn run_test(endpoint: &str, browser: &str) -> Result<()> {
     let mut metadata = HashMap::new();
     metadata.insert("name", "test-name");
     metadata.insert("build", "test-build");
-    caps.add_subkey("webgrid:options", "metadata", metadata)?;
 
-    let mut driver =
-        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?;
+    let mut driver = if browser == "firefox" {
+        let mut caps = DesiredCapabilities::firefox();
+        caps.add_subkey("webgrid:options", "metadata", metadata)?;
+        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?
+    } else if browser == "chrome" {
+        let mut caps = DesiredCapabilities::chrome();
+        caps.add_subkey("webgrid:options", "metadata", metadata)?;
+        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?
+    } else {
+        bail!("Unknown browser!");
+    };
+
     let session_id = driver.session_id().to_string();
 
     if let Err(e) = run_test_content(&mut driver).await {
