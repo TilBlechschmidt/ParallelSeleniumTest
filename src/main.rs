@@ -1,15 +1,23 @@
 use anyhow::{bail, Result};
-use std::{collections::HashMap, time::Duration};
+use humantime::format_duration;
+use std::{
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
+    time::{Duration, Instant},
+};
 use thirtyfour::{prelude::*, Capabilities};
 use thirtyfour_query::{ElementPoller, ElementQueryable};
-use tokio::spawn;
+use tokio::{spawn, time::sleep};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
 
     let endpoint = &args[1];
-    let count: i32 = args[2].parse::<i32>().unwrap();
+    let count = args[2].parse::<u64>().unwrap();
     let browser = if args.len() > 3 {
         args[3].to_ascii_lowercase()
     } else {
@@ -24,27 +32,45 @@ async fn main() -> Result<()> {
 
     println!("Running {} tests against '{}'", count, endpoint);
 
-    let mut failed = 0;
     let mut handles = Vec::new();
 
-    for _ in 0..count {
+    let failed = Arc::new(AtomicU64::new(0));
+
+    for id in 0..count {
+        let failed = failed.clone();
         let endpoint = endpoint.clone();
         let browser = browser.clone();
-        let handle =
-            spawn(
-                async move { run_test(&endpoint.clone(), &browser.clone(), timeout.clone()).await },
-            );
+        let handle = spawn(async move {
+            // Wait a tiny bit to stagger the requests
+            sleep(Duration::from_millis(id * 25)).await;
+
+            // Run the test
+            let start = Instant::now();
+            let result = run_test(&endpoint.clone(), &browser.clone(), timeout.clone()).await;
+            let duration = Instant::now() - start;
+            
+
+            // Report the result (and duration)
+            match result {
+                Ok(_) => {
+                    println!("Test #{} finished in {}.", id, format_duration(duration));
+                    Ok(())
+                }
+                Err(e) => {
+                    println!("Test #{} failed: {}", id, e);
+                    failed.fetch_add(1, Ordering::Relaxed);
+                    Err(e)
+                }
+            }
+        });
         handles.push(handle);
     }
 
-    for (i, handle) in handles.into_iter().enumerate() {
-        if let Err(e) = handle.await? {
-            println!("Test failed: {}", e);
-            failed += 1;
-        } else {
-            println!("Test #{} finished.", i);
-        }
+    for handle in handles.into_iter() {
+        handle.await?.ok();
     }
+
+    let failed = failed.load(Ordering::SeqCst);
 
     println!(
         "All tests finished. {} / {} succeeded.",
