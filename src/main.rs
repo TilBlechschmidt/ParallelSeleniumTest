@@ -16,6 +16,12 @@ async fn main() -> Result<()> {
         "firefox".to_owned()
     };
 
+    let timeout_secs = std::env::var("TIMEOUT")
+        .unwrap_or("600".into())
+        .parse::<u64>()
+        .expect("Failed to parse timeout!");
+    let timeout = Some(Duration::from_secs(timeout_secs));
+
     println!("Running {} tests against '{}'", count, endpoint);
 
     let mut failed = 0;
@@ -24,7 +30,10 @@ async fn main() -> Result<()> {
     for _ in 0..count {
         let endpoint = endpoint.clone();
         let browser = browser.clone();
-        let handle = spawn(async move { run_test(&endpoint.clone(), &browser.clone()).await });
+        let handle =
+            spawn(
+                async move { run_test(&endpoint.clone(), &browser.clone(), timeout.clone()).await },
+            );
         handles.push(handle);
     }
 
@@ -50,7 +59,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run_test(endpoint: &str, browser: &str) -> Result<()> {
+async fn run_test(endpoint: &str, browser: &str, timeout: Option<Duration>) -> Result<()> {
     let mut metadata = HashMap::new();
     metadata.insert("name", "test-name");
     metadata.insert("build", "test-build");
@@ -58,15 +67,15 @@ async fn run_test(endpoint: &str, browser: &str) -> Result<()> {
     let mut driver = if browser == "firefox" {
         let mut caps = DesiredCapabilities::firefox();
         caps.add_subkey("webgrid:options", "metadata", metadata)?;
-        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?
+        WebDriver::new_with_timeout(endpoint, &caps, timeout).await?
     } else if browser == "chrome" {
         let mut caps = DesiredCapabilities::chrome();
         caps.add_subkey("webgrid:options", "metadata", metadata)?;
-        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?
+        WebDriver::new_with_timeout(endpoint, &caps, timeout).await?
     } else if browser == "safari" {
         let mut caps = DesiredCapabilities::safari();
         caps.add_subkey("webgrid:options", "metadata", metadata)?;
-        WebDriver::new_with_timeout(endpoint, &caps, Some(Duration::from_secs(600))).await?
+        WebDriver::new_with_timeout(endpoint, &caps, timeout).await?
     } else {
         bail!("Unknown browser!");
     };
