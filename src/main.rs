@@ -8,8 +8,9 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use thirtyfour::prelude::ElementQueryable;
 use thirtyfour::{prelude::*, Capabilities};
-use thirtyfour_query::{ElementPoller, ElementQueryable};
+use thirtyfour_query::ElementPoller;
 use tokio::{spawn, time::sleep};
 
 #[tokio::main]
@@ -48,7 +49,6 @@ async fn main() -> Result<()> {
             let start = Instant::now();
             let result = run_test(&endpoint.clone(), &browser.clone(), timeout.clone()).await;
             let duration = Instant::now() - start;
-            
 
             // Report the result (and duration)
             match result {
