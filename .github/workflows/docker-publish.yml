@@ -30,7 +30,7 @@ jobs:
         id: prep
         run: |
           DOCKER_IMAGE=ghcr.io/tilblechschmidt/parallelseleniumtest
-          TAGS="${DOCKER_IMAGE}:sha-${GITHUB_SHA::8}"
+          TAGS="${DOCKER_IMAGE}:sha-${GITHUB_SHA::7}"
           echo "tags=${TAGS}" >> $GITHUB_ENV
           echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
       - name: Login to GHCR
