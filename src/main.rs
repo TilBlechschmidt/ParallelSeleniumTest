@@ -181,13 +181,13 @@ async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
 
 async fn send_message(driver: &WebDriver, message: &str) -> Result<()> {
     let cookie = Cookie::new("webgrid:message", serde_json::json!(message));
-    driver.add_cookie(cookie).await?;
+    driver.add_cookie(cookie).await.ok();
     Ok(())
 }
 
 async fn set_status(driver: &WebDriver, status: &str) -> Result<()> {
     let cookie = Cookie::new("webgrid:metadata.session:status", serde_json::json!(status));
-    driver.add_cookie(cookie).await?;
+    driver.add_cookie(cookie).await.ok();
 
     Ok(())
 }
