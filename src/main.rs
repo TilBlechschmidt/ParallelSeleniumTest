@@ -8,10 +8,10 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use thirtyfour::prelude::ElementQueryable;
 use thirtyfour::{prelude::*, Capabilities};
-use thirtyfour_query::ElementPoller;
 use tokio::{spawn, time::sleep};
+
+const DEMO_BODY: &'static str = include_str!("site.html");
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -119,44 +119,62 @@ async fn run_test(endpoint: &str, browser: &str, timeout: Option<Duration>) -> R
 }
 
 async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
-    driver.get("https://duckduckgo.com").await?;
-    send_message(&driver, "Visiting DuckDuckGo").await?;
+    send_message(&driver, "Visiting demo page").await?;
+    let page = format!(
+        "data:text/html;charset=utf-8;base64,{}",
+        base64::encode(DEMO_BODY)
+    );
 
-    let form = driver
-        .find_element(By::Id("search_form_input_homepage"))
-        .await?;
-    send_message(&driver, "Searching for webgrid.dev").await?;
-    form.send_keys("webgrid.dev").await?;
-    form.send_keys(Keys::Enter).await?;
+    driver.get(&page).await?;
 
-    // Set the element polling
-    driver
-        .set_implicit_wait_timeout(Duration::new(0, 0))
-        .await?;
-    let poller =
-        ElementPoller::TimeoutWithInterval(Duration::new(20, 0), Duration::from_millis(500));
-    driver.config_mut().set("ElementPoller", poller)?;
-
-    send_message(&driver, "Looking at results").await?;
-    let results = driver.query(By::ClassName("result__a")).all().await?;
-
-    let mut found = false;
-    for result in results {
-        let text = result.text().await?;
-        if text.contains("WebGrid") {
-            found = true;
-            break;
-        }
-    }
-
-    if !found {
-        send_message(&driver, "No result.").await?;
+    // 1. Check that the `h1` contains the correct title
+    send_message(&driver, "Checking title").await?;
+    let title = driver.find_element(By::Tag("h1")).await?.text().await?;
+    if !title.eq_ignore_ascii_case("Horrible looking test-page") {
+        send_message(&driver, "Title mismatch.").await?;
         set_status(&driver, "failure").await?;
-        bail!("Element not found :(");
-    } else {
-        send_message(&driver, "Found result!").await?;
-        set_status(&driver, "success").await?;
+        bail!("Title mismatched :(");
     }
+
+    // 2. Check that pressing the `#increment` button increments the `#counter`
+    send_message(&driver, "Checking increment").await?;
+    let counter = driver.find_element(By::Id("counter")).await?;
+    let value = counter.text().await?.parse::<i32>()?;
+    driver
+        .find_element(By::Id("increment"))
+        .await?
+        .click()
+        .await?;
+    let new_value = counter.text().await?.parse::<i32>()?;
+    if (value + 1) != new_value {
+        send_message(&driver, "Increment is broken.").await?;
+        set_status(&driver, "failure").await?;
+        bail!("Increment is broken :(");
+    }
+
+    // 3. Check that entering a new hash value actually works
+    send_message(&driver, "Checking hash value").await?;
+    let expected_hash = "🛋🥔";
+    let hash_input = driver.find_element(By::Id("newHashValue")).await?;
+    hash_input.send_keys(expected_hash).await?;
+    hash_input.send_keys(Keys::Enter).await?;
+    let hash = driver
+        .find_element(By::Id("hashValue"))
+        .await?
+        .text()
+        .await?;
+    if hash != expected_hash {
+        send_message(&driver, "Hash value updating is broken.").await?;
+        set_status(&driver, "failure").await?;
+        bail!(
+            "Hash value updating is broken: {} != {}",
+            hash,
+            expected_hash
+        );
+    }
+
+    send_message(&driver, "It worked!").await?;
+    set_status(&driver, "success").await?;
 
     Ok(())
 }
@@ -164,7 +182,6 @@ async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
 async fn send_message(driver: &WebDriver, message: &str) -> Result<()> {
     let cookie = Cookie::new("webgrid:message", serde_json::json!(message));
     driver.add_cookie(cookie).await?;
-    // println!("{} ({})", message, driver.session_id());
     Ok(())
 }
 

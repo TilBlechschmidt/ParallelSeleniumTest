@@ -45,6 +45,7 @@ name = "basic-test"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64",
  "humantime",
  "serde_json",
  "thirtyfour 0.26.1",

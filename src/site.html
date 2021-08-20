@@ -1,0 +1,37 @@
+<h1>Horrible looking test-page</h1>
+<p>This page serves the sole purpose of providing a dummy for a WebDriver to punch against!</p>
+
+<div id="counter">0</div>
+<button id="increment" onclick="increase()">Increase</button>
+
+<hr>
+
+<div>
+    Hash value: <span id="hashValue"></span>
+</div>
+
+<input id="newHashValue" placeholder="New hash value" onkeyup="updateHashValue()" />
+
+<script>
+    let value = 41;
+
+    function increase() {
+        value += 1;
+        console.log('New counter:', value);
+        document.getElementById('counter').innerText = value;
+    }
+
+    function loadHashValue() {
+        document.getElementById('hashValue').innerText = decodeURIComponent(location.hash.substr(1));
+    }
+
+    function updateHashValue() {
+        const newHashValue = encodeURIComponent(document.getElementById('newHashValue').value);
+        console.log('New hash:', newHashValue);
+        location.hash = `#${newHashValue}`;
+        loadHashValue();
+    }
+
+    increase();
+    loadHashValue();
+</script>
