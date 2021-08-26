@@ -154,7 +154,7 @@ async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
 
     // 3. Check that entering a new hash value actually works
     send_message(&driver, "Checking hash value").await?;
-    let expected_hash = "🛋🥔";
+    let expected_hash = "No emojis allowed here :(";
     let hash_input = driver.find_element(By::Id("newHashValue")).await?;
     hash_input.send_keys(expected_hash).await?;
     hash_input.send_keys(Keys::Enter).await?;
