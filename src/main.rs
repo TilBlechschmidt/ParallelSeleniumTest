@@ -15,6 +15,10 @@ const DEMO_BODY: &'static str = include_str!("site.html");
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    pretty_env_logger::formatted_timed_builder()
+        .filter_level(log::LevelFilter::Info)
+        .init();
+
     let args: Vec<String> = std::env::args().collect();
 
     let endpoint = &args[1];
@@ -31,7 +35,7 @@ async fn main() -> Result<()> {
         .expect("Failed to parse timeout!");
     let timeout = Some(Duration::from_secs(timeout_secs));
 
-    println!("Running {} tests against '{}'", count, endpoint);
+    log::info!("Running {} tests against '{}'", count, endpoint);
 
     let mut handles = Vec::new();
 
@@ -53,11 +57,11 @@ async fn main() -> Result<()> {
             // Report the result (and duration)
             match result {
                 Ok(_) => {
-                    println!("Test #{} finished in {}.", id, format_duration(duration));
+                    log::info!("Test #{} finished in {}.", id, format_duration(duration));
                     Ok(())
                 }
                 Err(e) => {
-                    println!("Test #{} failed: {}", id, e);
+                    log::info!("Test #{} failed: {}", id, e);
                     failed.fetch_add(1, Ordering::Relaxed);
                     Err(e)
                 }
@@ -72,7 +76,7 @@ async fn main() -> Result<()> {
 
     let failed = failed.load(Ordering::SeqCst);
 
-    println!(
+    log::info!(
         "All tests finished. {} / {} succeeded.",
         count - failed,
         count
