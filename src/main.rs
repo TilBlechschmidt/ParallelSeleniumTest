@@ -8,10 +8,46 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use thirtyfour::{prelude::*, Capabilities};
+use thirtyfour::{prelude::*, Capabilities, ExtensionCommand};
 use tokio::{spawn, time::sleep};
 
 const DEMO_BODY: &'static str = include_str!("site.html");
+
+struct WebgridMetadataCommand {
+    fields: HashMap<String, String>,
+}
+
+impl WebgridMetadataCommand {
+    pub fn new() -> Self {
+        Self {
+            fields: HashMap::new(),
+        }
+    }
+
+    pub fn with_field(key: String, value: String) -> Self {
+        let mut instance = Self::new();
+        instance.add(key, value);
+        instance
+    }
+
+    pub fn add(&mut self, key: String, value: String) {
+        self.fields.insert(key, value);
+    }
+}
+
+impl ExtensionCommand for WebgridMetadataCommand {
+    fn parameters_json(&self) -> Option<serde_json::Value> {
+        serde_json::to_value(self.fields.clone()).ok()
+    }
+
+    fn method(&self) -> thirtyfour::RequestMethod {
+        thirtyfour::RequestMethod::Post
+    }
+
+    fn endpoint(&self) -> String {
+        "/webgrid/metadata".into()
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -130,6 +166,10 @@ async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
     );
 
     driver.get(&page).await?;
+
+    // 0. Set some runtime metadata if the driver supports it
+    let metadata_command = WebgridMetadataCommand::with_field("answer".into(), "42".into());
+    driver.extension_command(metadata_command).await.ok();
 
     // 1. Check that the `h1` contains the correct title
     send_message(&driver, "Checking title").await?;
