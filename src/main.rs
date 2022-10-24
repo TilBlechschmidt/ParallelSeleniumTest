@@ -159,66 +159,70 @@ async fn run_test(endpoint: &str, browser: &str, timeout: Option<Duration>) -> R
 }
 
 async fn run_test_content(driver: &mut WebDriver) -> Result<()> {
-    send_message(&driver, "Visiting demo page").await?;
-    let page = format!(
-        "data:text/html;charset=utf-8;base64,{}",
-        base64::encode(DEMO_BODY)
-    );
-
-    driver.get(&page).await?;
-
-    // 0. Set some runtime metadata if the driver supports it
-    let metadata_command = WebgridMetadataCommand::with_field("answer".into(), "42".into());
-    driver.extension_command(metadata_command).await.ok();
-
-    // 1. Check that the `h1` contains the correct title
-    send_message(&driver, "Checking title").await?;
-    let title = driver.find_element(By::Tag("h1")).await?.text().await?;
-    if !title.eq_ignore_ascii_case("Horrible looking test-page") {
-        send_message(&driver, "Title mismatch.").await?;
-        set_status(&driver, "failure").await?;
-        bail!("Title mismatched :(");
-    }
-
-    // 2. Check that pressing the `#increment` button increments the `#counter`
-    send_message(&driver, "Checking increment").await?;
-    let counter = driver.find_element(By::Id("counter")).await?;
-    let value = counter.text().await?.parse::<i32>()?;
-    driver
-        .find_element(By::Id("increment"))
-        .await?
-        .click()
-        .await?;
-    let new_value = counter.text().await?.parse::<i32>()?;
-    if (value + 1) != new_value {
-        send_message(&driver, "Increment is broken.").await?;
-        set_status(&driver, "failure").await?;
-        bail!("Increment is broken :(");
-    }
-
-    // 3. Check that entering a new hash value actually works
-    send_message(&driver, "Checking hash value").await?;
-    let expected_hash = "No emojis allowed here :(";
-    let hash_input = driver.find_element(By::Id("newHashValue")).await?;
-    hash_input.send_keys(expected_hash).await?;
-    hash_input.send_keys(Keys::Enter).await?;
-    let hash = driver
-        .find_element(By::Id("hashValue"))
-        .await?
-        .text()
-        .await?;
-    if hash != expected_hash {
-        send_message(&driver, "Hash value updating is broken.").await?;
-        set_status(&driver, "failure").await?;
-        bail!(
-            "Hash value updating is broken: {} != {}",
-            hash,
-            expected_hash
+    for _ in 0..100 {
+        send_message(&driver, "Visiting demo page").await?;
+        let page = format!(
+            "data:text/html;charset=utf-8;base64,{}",
+            base64::encode(DEMO_BODY)
         );
-    }
 
-    send_message(&driver, "It worked!").await?;
-    set_status(&driver, "success").await?;
+        driver.get(&page).await?;
+
+        // 0. Set some runtime metadata if the driver supports it
+        let metadata_command = WebgridMetadataCommand::with_field("answer".into(), "42".into());
+        driver.extension_command(metadata_command).await.ok();
+
+        // 1. Check that the `h1` contains the correct title
+        send_message(&driver, "Checking title").await?;
+        let title = driver.find_element(By::Tag("h1")).await?.text().await?;
+        if !title.eq_ignore_ascii_case("Horrible looking test-page") {
+            send_message(&driver, "Title mismatch.").await?;
+            set_status(&driver, "failure").await?;
+            bail!("Title mismatched :(");
+        }
+
+        // 2. Check that pressing the `#increment` button increments the `#counter`
+        send_message(&driver, "Checking increment").await?;
+        let counter = driver.find_element(By::Id("counter")).await?;
+        let value = counter.text().await?.parse::<i32>()?;
+        driver
+            .find_element(By::Id("increment"))
+            .await?
+            .click()
+            .await?;
+        let new_value = counter.text().await?.parse::<i32>()?;
+        if (value + 1) != new_value {
+            send_message(&driver, "Increment is broken.").await?;
+            set_status(&driver, "failure").await?;
+            bail!("Increment is broken :(");
+        }
+
+        // 3. Check that entering a new hash value actually works
+        send_message(&driver, "Checking hash value").await?;
+        let expected_hash = "Hello world";
+        let hash_input = driver.find_element(By::Id("newHashValue")).await?;
+        hash_input.send_keys(expected_hash).await?;
+        hash_input.send_keys(Keys::Enter).await?;
+        let hash = driver
+            .find_element(By::Id("hashValue"))
+            .await?
+            .text()
+            .await?;
+        if hash != expected_hash {
+            send_message(&driver, "Hash value updating is broken.").await?;
+            set_status(&driver, "failure").await?;
+            bail!(
+                "Hash value updating is broken: {} != {}",
+                hash,
+                expected_hash
+            );
+        }
+
+        send_message(&driver, "It worked!").await?;
+        set_status(&driver, "success").await?;
+
+        sleep(Duration::from_millis(250)).await;
+    }
 
     Ok(())
 }
