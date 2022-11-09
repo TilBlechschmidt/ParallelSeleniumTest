@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
         let browser = browser.clone();
         let handle = spawn(async move {
             // Wait a tiny bit to stagger the requests
-            sleep(Duration::from_millis(id * 25)).await;
+            // sleep(Duration::from_millis(id * 25)).await;
 
             // Run the test
             let start = Instant::now();
